@@ -1,11 +1,16 @@
 #include <iostream>
-#define LOGE(x) std::cout << x << std::endl;
+#define LOGE(x) std::cout << x << std::endl
+#define String const char*
 
-int* aggrInput(int n)
+int *aggrInput(int n)
 {
   int *acc = new int(n);
-
-  std::cin >> *acc;
+  int i = 0;
+  while (i < n)
+  {
+    if (std::cin >> acc[i])
+      i++;
+  }
 
   return acc;
 }
@@ -14,15 +19,28 @@ template <typename T>
 void printAll(T *arr, int len)
 {
   for (int i = 0; i < len; i++)
-    LOGE(*arr[i])
+    LOGE(arr[i]);
 }
 
 int main()
 {
+  int n, q;
+  // -------- Read the length of entries -------- //
+  LOGE("Enter the number of entries");
+  std::cin >> n;
 
-  int* input = aggrInput(2);
+  // -------- Read the entries -------- //
+  LOGE("Enter " << n << " entries");
+  int *entries = aggrInput(n);
 
-  printAll(&input, 2);
+  // -------- Read the number of questions -------- //
+  LOGE("Enter the number of questions");
+  std::cin >> q;
+
+  // -------- Read the questions -------- //
+  LOGE("Enter " << q << " questions");
+  int *questions = aggrInput(q);
+
 
   std::cin.get();
   return 0;
