@@ -1,6 +1,6 @@
 #include <iostream>
 #define LOGE(x) std::cout << x << std::endl
-#define String const char*
+#define String const char *
 
 int *aggrInput(int n)
 {
@@ -13,6 +13,13 @@ int *aggrInput(int n)
   }
 
   return acc;
+}
+
+int *bsearch(int *arr, int len, int x)
+{
+  int s = arr[0];
+  int e = arr[len - 1];
+  int i = (s + e + 1) / 2;
 }
 
 template <typename T>
@@ -40,7 +47,6 @@ int main()
   // -------- Read the questions -------- //
   LOGE("Enter " << q << " questions");
   int *questions = aggrInput(q);
-
 
   std::cin.get();
   return 0;
