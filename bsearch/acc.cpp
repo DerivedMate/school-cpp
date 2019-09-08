@@ -1,53 +1,115 @@
 #include <iostream>
+#include <chrono>
+#include <map>
+#include <vector>
 #define LOGE(x) std::cout << x << std::endl
-#define String const char *
 
-int *aggrInput(int n)
+void aggrInput(int n, int *acc)
 {
-  int *acc = new int(n);
-  int i = 0;
-  while (i < n)
+  for (int i = 0; i < n; i++)
+    std::cin >> acc[i];
+}
+
+std::map<int, int> bsDict;
+
+int bsrec(int *arr, int len, int x, int s, int e)
+{
+  auto entry = bsDict.find(x);
+  if (entry != bsDict.end())
   {
-    if (std::cin >> acc[i])
-      i++;
+    return entry->second;
   }
-
-  return acc;
-}
-
-int *bsearch(int *arr, int len, int x)
-{
-  int s = arr[0];
-  int e = arr[len - 1];
   int i = (s + e + 1) / 2;
+
+  if (arr[i] == x) {
+    bsDict[x] = i;
+    return i;
+  }
+  else if (s >= e) {
+    bsDict[x] = 0;
+    return 0;
+  }
+  else if (x >= arr[i])
+    return bsrec(arr, len, x, i, e);
+  else if (x < arr[i])
+    return bsrec(arr, len, x, s, i - 1);
 }
 
-template <typename T>
-void printAll(T *arr, int len)
+int bsearch(int *arr, int len, int x, int start)
 {
-  for (int i = 0; i < len; i++)
-    LOGE(arr[i]);
+  auto entry = bsDict.find(x);
+  if (entry != bsDict.end())
+  {
+    return entry->second;
+  }
+  int s = start;
+  int e = len - 1;
+  int i;
+
+  do
+  {
+    i = (s + e + 1) / 2;
+
+    if (x >= arr[i])
+    {
+      s = i;
+    }
+    else
+    {
+      e = i - 1;
+    }
+  } while (arr[i] != x && s < e);
+
+  bsDict[x] = i;
+
+  return i;
 }
 
 int main()
 {
+  auto start = std::chrono::high_resolution_clock::now();
   int n, q;
-  // -------- Read the length of entries -------- //
-  LOGE("Enter the number of entries");
+
   std::cin >> n;
+  int entries[n];
+  aggrInput(n, entries);
 
-  // -------- Read the entries -------- //
-  LOGE("Enter " << n << " entries");
-  int *entries = aggrInput(n);
-
-  // -------- Read the number of questions -------- //
-  LOGE("Enter the number of questions");
   std::cin >> q;
+  int questions[q];
+  aggrInput(q, questions);
 
-  // -------- Read the questions -------- //
-  LOGE("Enter " << q << " questions");
-  int *questions = aggrInput(q);
+  auto end = std::chrono::high_resolution_clock::now();
+  LOGE((end - start).count());
+  LOGE("n: " << n);
+  LOGE("q: " << q);
 
-  std::cin.get();
+  for (int i = 0; i < q; i++)
+  {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    int anIndex = bsrec(entries, n, questions[i], 0, n - 1);
+    int qst = questions[i];
+    int k = anIndex;
+    int j = anIndex + 1;
+    int n = 0;
+
+    while (entries[k] == qst && k >= 0)
+    {
+      n++;
+      k--;
+    }
+
+    while (entries[j] == qst && j <= n)
+    {
+      n++;
+      j++;
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    LOGE((end - start).count());
+
+    LOGE(n);
+  }
+
   return 0;
 }
