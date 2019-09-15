@@ -10,19 +10,13 @@ int main()
     LOG(0);
   else
   {
-    int n = 0;
-    for (int i = a; i <= b;)
-    {
-      int m = i % k;
-      if (m == 0)
-      {
-        n += (b - i) / k + 1;
-        break;
-      }
-      i += k - m;
-    }
+    int m = a % k;
+    int n = b % k;
 
-    LOG(n);
+    a = a + m;
+    b = b - n;
+
+    LOG((b - a) / k + 1);
   }
 
   return 0;
