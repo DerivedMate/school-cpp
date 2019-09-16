@@ -1,23 +1,17 @@
 #include <iostream>
-#include <map>
+#include <cmath>
 #define LOG(x) std::cout << x << std::endl
-
-int f(int x)
-{
-  return 3 * x + 3;
-}
 
 int main()
 {
-  int i, j;
+  long long i;
   std::cin >> i;
-
-  while (i % 2 == 0 && i != 1)
+  while (i % 2ll == 0ll)
   {
     i /= 2;
   }
 
-  if (i == 1)
+  if (i == 1ll)
     LOG("TAK");
   else
     LOG("NIE");
