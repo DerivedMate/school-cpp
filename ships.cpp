@@ -15,6 +15,15 @@
 #define CLEAR "CLEAR"
 #endif
 
+const int ui_width = 52;
+int rand(int a, int b)
+{
+  std::random_device rd;
+  std::mt19937 eng(rd());
+  std::uniform_int_distribution<> distr(a, b);
+  return distr(eng);
+}
+
 enum Direction
 {
   North,
@@ -43,6 +52,18 @@ Direction direction_of_int(int x)
     throw "Unrecongized int case at {direction_of_int}";
     break;
   }
+}
+
+Direction direction_of_string(std::string &x)
+{
+  if (x == "North" || x == "north")
+    return North;
+  else if (x == "South" || x == "south")
+    return South;
+  else if (x == "East" || x == "east")
+    return East;
+  else if (x == "West" || x == "west")
+    return West;
 }
 
 enum GameMode
@@ -211,13 +232,33 @@ struct Ship
 struct Player
 {
   // -------- Player's tries -------- //
-  std::vector<Point> hits;
-  std::vector<Ship> ships;
+  std::vector<Point> hits = {};
+  std::vector<Ship> ships = {};
+  std::string name;
+  bool isAI = false;
 
-  Player() {}
-  void addShip(Ship &ship)
+  Player()
   {
-    this->ships.push_back(ship);
+    name = "unknown";
+  }
+
+  Player(std::string &name)
+  {
+    this->name = name;
+  }
+
+  ~Player()
+  {
+  }
+
+  bool isDead()
+  {
+    return this->ships.size() == 0;
+  }
+
+  void addShip(Ship *ship)
+  {
+    ships.push_back(*ship);
   }
 
   void removeShip(Point &p)
@@ -247,9 +288,15 @@ struct Player
       return false;
   }
 
-  bool attack(Player* player, int x, int y)
+  bool attack(Player *player, int x, int y)
   {
     return player->hit(x, y);
+  }
+
+  bool attack_rand(Player *player, int max_x, int max_y)
+  {
+    int x = rand(0, max_x);
+    int y = rand(0, max_y);
   }
 };
 
@@ -424,10 +471,45 @@ void displayConfig(std::vector<int> &types, int *dim, int width)
   }
 }
 
+void initPlayer(Player *player, std::vector<int> &types)
+{
+  clearScreen();
+  displayLogo();
+
+  std::string l0[] = {
+      "Player " + player->name + ",",
+      "It's high time you place your ships!",
+      "Imma need it's x 'n y coords and the direction.",
+      "(i.e.: [4]> 3 2 South)"};
+
+  for (std::string &l : l0)
+    std::cout << center(l, ui_width) << std::endl;
+
+  int x, y;
+  std::string dir;
+  for (int &sz : types)
+  {
+    std::cout << "[" << sz << "]> ";
+    std::cin >> x >> y >> dir;
+    std::cout << x << y << dir;
+    Ship s = Ship(x, y, direction_of_string(dir), sz);
+    player->ships.push_back(s);
+  }
+}
+
+void initPC(Player *pc, std::vector<int> &types)
+{
+  pc->isAI = true;
+}
+
+void gameon(Player *main, Player *other)
+{
+  std::cin.ignore();
+}
+
 int main()
 {
-  int ui_width = 52;
-  std::vector<int> shipTypes;
+  std::vector<int> shipsTypes;
   int dim[2] = {0, 0};
   GameMode mode;
   // Ship a = Ship(1, 3, North, 9);
@@ -438,9 +520,21 @@ int main()
 
   displayWelcomeScreen(ui_width);
   mode = getGameMode(ui_width);
-  displayConfig(shipTypes, dim, ui_width);
+  displayConfig(shipsTypes, dim, ui_width);
 
-  Player a, b;
+  Player *a, *b;
+
+  initPlayer(a, shipsTypes);
+  if (mode == PVP)
+    initPlayer(b, shipsTypes);
+  else
+    initPC(b, shipsTypes);
+
+  while (!(a->isDead() || b->isDead()))
+  {
+    gameon(a, b);
+    std::swap(a, b);
+  }
 
   return 0;
 }
