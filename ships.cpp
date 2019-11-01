@@ -129,11 +129,11 @@ struct Point
 
   Point &operator+(Point *other)
   {
-    Point out = *this;
-    out.x += other->x;
-    out.y += other->y;
+    Point *out = new Point(this->x, this->y);
+    out->x += other->x;
+    out->y += other->y;
 
-    return out;
+    return *out;
   }
 
   bool operator==(Point &other)
@@ -148,22 +148,21 @@ struct Ship
   Point stern;
   Direction dir;
 
-  int total_lifes;
-  std::vector<Point> hits;
+  int total_lifes = 1;
+  std::vector<Point> hits = {};
 
   Ship(int x0, int y0, Direction dir, int size)
   {
-    total_lifes = size;
+    this->total_lifes = size;
     this->stern = Point(x0, y0);
-    this->bow = this->stern;
+    this->bow = stern;
     this->dir = dir;
+    this->hits = {};
 
-    this->bow.add(dir, size);
+    this->bow.add(dir, size - 1);
   }
 
-  ~Ship()
-  {
-  }
+  ~Ship() {}
 
   int lifes()
   {
@@ -176,17 +175,27 @@ struct Ship
     switch (this->dir)
     {
     case North:
-      possible = x == this->bow.x && y <= this->bow.y && y >= this->stern.y;
-      break;
-    case South:
       possible = x == this->bow.x && y >= this->bow.y && y <= this->stern.y;
       break;
+    case South:
+      possible = x == this->bow.x && y <= this->bow.y && y >= this->stern.y;
+      break;
     case East:
-      possible = y == this->bow.y && x >= this->bow.x && x <= this->stern.x;
-      break;
+    {
+      bool py = y == this->bow.y;
+      bool px = x >= this->stern.x && x <= this->bow.x;
+      possible = py && px;
+    }
+    break;
     case West:
-      possible = y == this->bow.y && x <= this->bow.x && x >= this->stern.x;
+      possible = y == this->bow.y && x <= this->stern.x && x >= this->bow.x;
       break;
+    default:
+    {
+      possible = true;
+      std::cout << "[DEBUG]> Unknown Direction of a ship" << std::endl;
+    };
+    break;
     }
 
     if (!possible)
@@ -201,14 +210,9 @@ struct Ship
     return !wasHit;
   }
 
-  static bool can_be_built(int x0, int y0, Direction dir, int size, int *dim)
+  static bool can_be_built(Ship &ship, int *dim)
   {
-    Point a = Point(x0, y0);
-    Point b = a;
-    b.add(dir, size);
-
-    bool can = (b.x >= 0 && b.x <= dim[0]) && (b.y >= 0 && b.y <= dim[1]);
-    return can;
+    return (ship.bow.x >= 0 && ship.bow.x <= dim[0]) && (ship.bow.y >= 0 && ship.bow.y <= dim[1]) && (ship.dir == North || ship.dir == South || ship.dir == East || ship.dir == West);
   }
 
   static bool intersect(Ship &a, Ship &b)
@@ -256,11 +260,6 @@ struct Player
     return this->ships.size() == 0;
   }
 
-  void addShip(Ship *ship)
-  {
-    ships.push_back(*ship);
-  }
-
   void removeShip(Point &p)
   {
     auto ptr = std::find_if(this->ships.begin(), this->ships.end(), [p](Ship &s) {
@@ -269,6 +268,19 @@ struct Player
 
     if (ptr != this->ships.end())
       delete &*ptr;
+  }
+
+  bool addShip(Ship &s)
+  {
+    bool collision = false;
+    for (auto p = this->ships.begin(); p != this->ships.end() && !collision; p++)
+    {
+      collision = Ship::intersect(s, *p);
+    }
+
+    if (!collision)
+      this->ships.push_back(s);
+    return !collision;
   }
 
   bool hit(int x, int y)
@@ -372,6 +384,16 @@ void displayWelcomeScreen(int width)
   std::cin.get();
 }
 
+void wait(int ms)
+{
+  std::this_thread::sleep_for(std::chrono::microseconds(ms));
+}
+
+void wait_std()
+{
+  wait(900000);
+}
+
 void countDown(int width)
 {
   const int DIGIT_HEIGHT = 6;
@@ -406,7 +428,7 @@ void countDown(int width)
     for (int i = 0; i < DIGIT_HEIGHT; i++)
       std::cout << center(dig[i], width) << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::microseconds(900000));
+    wait_std();
     clearScreen();
   }
 }
@@ -471,29 +493,104 @@ void displayConfig(std::vector<int> &types, int *dim, int width)
   }
 }
 
-void initPlayer(Player *player, std::vector<int> &types)
+void displayShips(Player *player, int *dim)
+{
+  const std::string boat = "|[]|";
+  const std::string water = "|  |";
+
+  for (int y = 0; y < dim[1]; y++)
+  {
+    std::string layout = "";
+    for (int x = 0; x < dim[0]; x++)
+    {
+      auto hsip = std::find_if(player->ships.begin(), player->ships.end(), [x, y](Ship &s) {
+        return s.wouldHit(x, y);
+      });
+
+      if (hsip != player->ships.end())
+        layout += boat;
+      else
+        layout += water;
+    }
+    std::cout << center(layout, ui_width) << std::endl;
+  }
+
+  std::cout << std::endl;
+}
+
+void initPlayer(Player *player, std::vector<int> &types, int *dim)
 {
   clearScreen();
   displayLogo();
+
+  std::string l00 = "What's your name?";
+  std::cout << center(l00, ui_width) << "\n> ";
+  std::cin >> player->name;
 
   std::string l0[] = {
       "Player " + player->name + ",",
       "It's high time you place your ships!",
       "Imma need it's x 'n y coords and the direction.",
-      "(i.e.: [4]> 3 2 South)"};
+      "(i.e.: [4]> 3 2 South)",
+      "",
+      "PRESS ANY KEY TO CONTINUE"};
+
+  std::string l1 = "Choose your placement " + player->name + "\n";
+  std::string l2 = "Are you satisfied with your placement? [y/n]";
+  center(l1, ui_width);
+  center(l2, ui_width);
+
+  clearScreen();
+  displayLogo();
 
   for (std::string &l : l0)
     std::cout << center(l, ui_width) << std::endl;
 
-  int x, y;
-  std::string dir;
-  for (int &sz : types)
+  std::cin.get();
+
+  bool satisfied = false;
+  char satBuff;
+
+  while (!satisfied)
   {
-    std::cout << "[" << sz << "]> ";
-    std::cin >> x >> y >> dir;
-    std::cout << x << y << dir;
-    Ship s = Ship(x, y, direction_of_string(dir), sz);
-    player->ships.push_back(s);
+    int x, y;
+    std::string dir;
+    player->ships = {};
+
+    for (int &sz : types)
+    {
+      clearScreen();
+      displayLogo();
+      std::cout << l1;
+      displayShips(player, dim);
+      bool added = false;
+
+      while (!added)
+      {
+        std::cout << "[" << sz << "]> ";
+        std::cin >> x >> y >> dir;
+        Direction d = direction_of_string(dir);
+
+        Ship ship = Ship(x, y, d, sz);
+        // x, y, d, sz, dim
+        bool canAdd = Ship::can_be_built(ship, dim);
+        if (canAdd)
+          added = player->addShip(ship);
+        if (!added)
+        {
+          std::cout << "Failed to add due to a collision / getting out of the boundries.\nTry a new position (pun not intended)!" << std::endl;
+        }
+      }
+    }
+
+    clearScreen();
+    displayLogo();
+    displayShips(player, dim);
+
+    std::cout << l2;
+    std::cin >> satBuff;
+    if (satBuff == 'y' || satBuff == 'Y')
+      satisfied = true;
   }
 }
 
@@ -512,9 +609,6 @@ int main()
   std::vector<int> shipsTypes;
   int dim[2] = {0, 0};
   GameMode mode;
-  // Ship a = Ship(1, 3, North, 9);
-  // Ship b = Ship(5, 0, North, 10);
-  // std::cout << Ship::intersect(a, b);
   clearScreen();
   countDown(ui_width);
 
@@ -522,11 +616,11 @@ int main()
   mode = getGameMode(ui_width);
   displayConfig(shipsTypes, dim, ui_width);
 
-  Player *a, *b;
+  Player *a = new Player(), *b = new Player();
 
-  initPlayer(a, shipsTypes);
+  initPlayer(a, shipsTypes, dim);
   if (mode == PVP)
-    initPlayer(b, shipsTypes);
+    initPlayer(b, shipsTypes, dim);
   else
     initPC(b, shipsTypes);
 
