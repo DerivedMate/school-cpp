@@ -55,7 +55,8 @@ struct Player
     return !collision;
   }
 
-  bool hit(int x, int y)
+  // Get hit
+  bool hit(Player* attacker, int x, int y)
   {
     Point p = Point(x, y);
     auto boat = std::find_if(this->ships.begin(), this->ships.end(), [x, y](Ship &s) {
@@ -64,9 +65,10 @@ struct Player
 
     if (boat != this->ships.end())
     {
-      this->hits.push_back(p);
+      attacker->hits.push_back(p);
       boat->hits.push_back(p);
-      if(boat->lifes() == 0) this->removeShip(p);
+      if (boat->lifes() == 0)
+        this->removeShip(p);
       return true;
     }
     else
@@ -75,12 +77,24 @@ struct Player
 
   bool attack(Player *player, int x, int y)
   {
-    return player->hit(x, y);
+    return player->hit(this, x, y);
   }
 
   bool attack_rand(Player *player, int max_x, int max_y)
   {
-    int x = rand(0, max_x);
-    int y = rand(0, max_y);
+    bool repeated = true;
+    int x, y;
+
+    while (repeated)
+    {
+      x = rand(0, max_x);
+      y = rand(0, max_y);
+
+      repeated = std::find_if(this->hits.begin(), this->hits.end(), [x, y](Point &p) {
+                   return p.x == x && p.y == y;
+                 }) != this->hits.end();
+    }
+
+    return player->hit(this, x, y);
   }
 };

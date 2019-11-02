@@ -45,14 +45,23 @@ void displayWelcomeScreen(int width)
   std::cin.get();
 }
 
+#ifdef _WIN32
+#include <windows.h>
+
+void wait(int milliseconds)
+{
+  Sleep(milliseconds);
+}
+#else
 void wait(int ms)
 {
-  std::this_thread::sleep_for(std::chrono::microseconds(ms));
+  std::this_thread::sleep_for(std::chrono::microseconds(ms * 1000));
 }
+#endif
 
 void wait_std()
 {
-  wait(900000);
+  wait(900);
 }
 
 void countDown(int width)
@@ -142,29 +151,50 @@ void displayConfig(std::vector<int> &types, int *dim, int width)
   displayLogo();
 
   // -------- Configure the ships -------- //
+  bool allLegal = true;
   for (std::string &l : l1)
     std::cout << center(l, width) << std::endl;
-  std::cin >> n;
 
-  for (int i = 0; i < n; i++)
+  do
   {
-    int buff;
-    std::cin >> buff;
-    types.push_back(buff);
-  }
+    std::cin >> n;
+
+    for (int i = 0; i < n; i++)
+    {
+      int buff;
+      std::cin >> buff;
+
+      if (buff > dim[0] || buff > dim[1])
+      {
+        std::cout << buff << " is a bit too big. Try a new config!" << std::endl;
+
+        types = {};
+        allLegal = false;
+        break;
+      }
+      else
+        allLegal = true;
+
+      types.push_back(buff);
+    }
+  } while (!allLegal);
 }
 
-std::string string_of_int(int x) {
+std::string string_of_int(int x)
+{
   std::string l;
-  if(x <= 9) {
-      l += ' ';
-      l += char(x + '0');
-    } else {
-      int a = x % 10;
-      int b = (x % 100 - a) / 10;
-      l += b + '0';
-      l += a + '0';
-    }
+  if (x <= 9)
+  {
+    l += ' ';
+    l += char(x + '0');
+  }
+  else
+  {
+    int a = x % 10;
+    int b = (x % 100 - a) / 10;
+    l += b + '0';
+    l += a + '0';
+  }
 
   return l;
 }
@@ -173,7 +203,8 @@ void displayTopCoords(int *dim)
 {
   std::cout << std::flush;
   std::string l = "  |";
-  for (int x = 0; x < dim[0]; x++) {
+  for (int x = 0; x < dim[0]; x++)
+  {
     l += string_of_int(x);
     l += "|";
   }
@@ -183,6 +214,7 @@ void displayTopCoords(int *dim)
 void displayBoard(Player *main, Player *other, int *dim)
 {
   std::string lHit = "XX|";
+  std::string lAttacked = "**|";
   std::string lFail = "OO|";
   std::string lShip = "##|";
   std::string lWater = "  |";
@@ -214,14 +246,20 @@ void displayBoard(Player *main, Player *other, int *dim)
                 }) != other->ships.end();
       }
 
-      if (!isTrie && !isShip)
-        line += lWater;
+      bool wasHitByEnemy = std::find_if(other->hits.begin(), other->hits.end(), [x, y](Point &p) {
+                             return p.x == x && p.y == y;
+                           }) != other->hits.end();
+
+      if (isShip && wasHitByEnemy)
+        line += lAttacked;
       else if (isShip)
         line += lShip;
       else if (isHit)
         line += lHit;
-      else
+      else if (isTrie)
         line += lFail;
+      else
+        line += lWater;
     }
 
     std::cout << center(line, ui_width) << std::endl;
@@ -246,7 +284,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
       "PRESS ANY KEY TO CONTINUE"};
 
   std::string l1 = "Choose your placement " + player->name + "\n";
-  std::string l2 = "Are you satisfied with your placement? [y/n]";
+  std::string l2 = "Are you satisfied with your placement? [y/n] ";
 
   center(l1, ui_width);
   center(l2, ui_width);
@@ -341,7 +379,7 @@ void gameon(Player *main, Player *other, int *dim)
   {
     std::string l0[] = {
         "It's your round " + main->name + "!",
-        "Score: " + main->hits.size(),
+        "Score: " + main->hits.size() + '0',
         "Enter your guess below.",
         "(i.e.: 3 2)"};
 

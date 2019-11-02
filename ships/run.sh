@@ -21,4 +21,7 @@ $CMP -g -I ./ -c ships.cpp util.o
 $CMP -Wall -g -o main ships.o
 
 # Run the code
-./main
+if [ "$2" == "r" ]; 
+  then ./main
+fi
+ # g++ -std=c++11 -g -Wall -c direction.cpp util.cpp point.cpp gamemode.cpp && g++ -std=c++11 -g -c ship.cpp point.cpp direction.cpp && g++ -std=c++11 -g -I ./ -c player.cpp ship.o && g++ -std=c++11 -g -I ./ -c ships.cpp util.o && g++ -std=c++11 -Wall -g -o main ships.o
