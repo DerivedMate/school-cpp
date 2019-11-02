@@ -66,6 +66,7 @@ struct Player
     {
       this->hits.push_back(p);
       boat->hits.push_back(p);
+      if(boat->lifes() == 0) this->removeShip(p);
       return true;
     }
     else

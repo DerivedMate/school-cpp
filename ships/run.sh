@@ -15,4 +15,4 @@ g++ -g -I ./ -c ships.cpp util.o
 g++ -Wall -g -o main ships.o
 
 # Run the code
-./main
+# ./main
