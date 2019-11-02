@@ -247,6 +247,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
 
   std::string l1 = "Choose your placement " + player->name + "\n";
   std::string l2 = "Are you satisfied with your placement? [y/n]";
+
   center(l1, ui_width);
   center(l2, ui_width);
 
@@ -256,6 +257,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
   for (std::string &l : l0)
     std::cout << center(l, ui_width) << std::endl;
 
+  std::cin.get();
   std::cin.get();
 
   bool satisfied = false;
