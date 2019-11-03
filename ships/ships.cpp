@@ -250,7 +250,12 @@ void displayBoard(Player *main, Player *other, int *dim)
                              return p.x == x && p.y == y;
                            }) != other->hits.end();
 
-      if (isShip && wasHitByEnemy)
+      // std::cout << "[" << x << " : " << y << "]" << ": ";
+      // for(const bool& b : {isShip, isTrie, wasHitByEnemy}) {
+      //   std::cout << (b ? "YES, " : "NO, ");
+      // }
+
+      if (wasHitByEnemy)
         line += lAttacked;
       else if (isShip)
         line += lShip;
@@ -322,10 +327,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
         Direction d = direction_of_string(dir);
 
         Ship ship = Ship(x, y, d, sz);
-        // x, y, d, sz, dim
-        bool canAdd = Ship::can_be_built(&ship, dim, player->ships);
-        if (canAdd)
-          added = player->addShip(ship);
+        added = player->addShip(ship);
         if (!added)
         {
           std::cout << "Failed to add due to a collision / getting out of the boundries.\nTry a new position (pun not intended)!" << std::endl;
@@ -344,39 +346,52 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
   }
 }
 
-void initPC(Player *pc, std::vector<int> &types)
+void initPC(Player *pc, std::vector<int> &types, int *dim)
 {
   pc->isAI = true;
+  for (int i = 0; i < types.size(); i++)
+  {
+    bool placed = false;
+
+    while (!placed)
+    {
+      int x = rand(0, dim[0]);
+      int y = rand(0, dim[1]);
+      Direction dir = direction_of_int(rand(0, 3));
+
+      Ship s = Ship(x, y, dir, types[i]);
+      placed = pc->addShip(s);
+    }
+  }
 }
 
 void gameon(Player *main, Player *other, int *dim)
 {
-  std::string lHit[] = {
-      " _   _ ___ _____ _ ",
-      "| | | |_ _|_   _| |",
-      "| |_| || |  | | | |",
-      "|  _  || |  | | |_|",
-      "|_| |_|___| |_| (_)"};
-
-  std::string lMiss[] = {
-      " __  __ ___ ____ ____  _ ",
-      "|  \\\/  |_ _/ ___/ ___|| |",
-      "| |\\\/| || |\\___ \\___ \\| |",
-      "| |  | || | ___) ___) |_|",
-      "|_|  |_|___|____|____/(_)"};
-
-  for (std::string &l : lHit)
-    center(l, ui_width);
-  for (std::string &l : lMiss)
-    center(l, ui_width);
-
-  clearScreen();
-  displayLogo();
-
   if (main->isAI)
     main->attack_rand(other, dim[0], dim[1]);
   else
   {
+    std::string lHit[] = {
+        " _   _ ___ _____ _ ",
+        "| | | |_ _|_   _| |",
+        "| |_| || |  | | | |",
+        "|  _  || |  | | |_|",
+        "|_| |_|___| |_| (_)"};
+
+    std::string lMiss[] = {
+        " __  __ ___ ____ ____  _ ",
+        "|  \\\/  |_ _/ ___/ ___|| |",
+        "| |\\\/| || |\\___ \\___ \\| |",
+        "| |  | || | ___) ___) |_|",
+        "|_|  |_|___|____|____/(_)"};
+
+    for (std::string &l : lHit)
+      center(l, ui_width);
+    for (std::string &l : lMiss)
+      center(l, ui_width);
+
+    clearScreen();
+    displayLogo();
     std::string l0[] = {
         "It's your round " + main->name + "!",
         "Score: " + main->hits.size() + '0',
@@ -392,6 +407,10 @@ void gameon(Player *main, Player *other, int *dim)
     std::cin >> x >> y;
 
     bool didHit = main->attack(other, x, y);
+
+    clearScreen();
+    displayLogo();
+
     if (didHit)
       for (std::string &l : lHit)
         std::cout << l << std::endl;
@@ -421,13 +440,21 @@ int main()
   if (mode == PVP)
     initPlayer(b, shipsTypes, dim, b);
   else
-    initPC(b, shipsTypes);
+    initPC(b, shipsTypes, dim);
 
   while (!(a->isDead() || b->isDead()))
   {
     gameon(a, b, dim);
     std::swap(a, b);
   }
+
+  if (a->isDead())
+  {
+    std::swap(a, b);
+  }
+
+  std::string l = a->name + " WON!";
+  std::cout << center(l, ui_width) << std::endl;
 
   return 0;
 }

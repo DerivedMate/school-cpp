@@ -1,4 +1,4 @@
-#include "point.cpp"
+#include "util.cpp"
 #include <vector>
 #include <algorithm>
 
@@ -87,6 +87,7 @@ struct Ship
 
   static bool intersect(Ship &a, Ship &b)
   {
+    /*
     int x1 = a.bow.x;
     int y1 = a.bow.y;
 
@@ -99,11 +100,13 @@ struct Ship
     int x4 = b.stern.x;
     int y4 = b.stern.y;
 
-    bool sameLineX = (x4 <= x1 && x4 >= x2) || (x3 <= x1 && x3 >= x2);
-    bool sameLineY = (y4 <= y1 && y4 >= y2) || (y3 <= y1 && y3 >= y2);
+    bool sameLineX = (x4 < x1 && x4 > x2) || (x3 < x1 && x3 > x2);
+    bool sameLineY = (y4 < y1 && y4 > y2) || (y3 < y1 && y3 > y2);
     bool overlapping = sameLineX || sameLineY;
 
-    return overlapping || (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4) != 0;
+    return overlapping || (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4) != 0;*/
+
+    return doIntersect(a.stern, a.bow, b.stern, b.bow);
   }
 
   bool intersect(Ship &other)

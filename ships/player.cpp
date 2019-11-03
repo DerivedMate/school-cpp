@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <stdlib.h>
 #include "ship.cpp"
-#include "util.cpp"
 
 struct Player
 {
@@ -32,14 +31,15 @@ struct Player
     return this->ships.size() == 0;
   }
 
-  void removeShip(Point &p)
+  void removeShip(Point *p)
   {
     auto ptr = std::find_if(this->ships.begin(), this->ships.end(), [p](Ship &s) {
-      return s.wouldHit(p.x, p.y);
+      return s.wasHitBy(p);
     });
 
-    if (ptr != this->ships.end())
-      delete &*ptr;
+    if (ptr != this->ships.end()) {
+      this->ships.erase(ptr);
+    }
   }
 
   bool addShip(Ship &s)
@@ -68,7 +68,7 @@ struct Player
       attacker->hits.push_back(p);
       boat->hits.push_back(p);
       if (boat->lifes() == 0)
-        this->removeShip(p);
+        this->removeShip(&p);
       return true;
     }
     else

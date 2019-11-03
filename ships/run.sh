@@ -11,7 +11,7 @@ rm ./*.o
 $CMP -g -Wall -c direction.cpp util.cpp point.cpp gamemode.cpp
 
 # Compile the classes
-$CMP -g -c ship.cpp point.cpp direction.cpp
+$CMP -g -c ship.cpp point.cpp direction.cpp util.cpp
 
 $CMP -g -I ./ -c player.cpp ship.o
 
