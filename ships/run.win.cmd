@@ -1,1 +1,1 @@
-g++ -std=c++11 -g -Wall -c direction.cpp util.cpp point.cpp gamemode.cpp && g++ -std=c++11 -g -c ship.cpp point.cpp direction.cpp && g++ -std=c++11 -g -I ./ -c player.cpp ship.o && g++ -std=c++11 -g -I ./ -c ships.cpp util.o && g++ -std=c++11 -Wall -g -o main ships.o
+g++ -std=c++11 -g -Wall -c direction.cpp util.cpp point.cpp gamemode.cpp && g++ -std=c++11 -g -c ship.cpp point.cpp direction.cpp && g++ -std=c++11 -g -I ./ -c player.cpp ship.o && g++ -std=c++11 -g -I ./ -c ships.cpp util.o && g++ -std=c++11 -Wall -g -o main.exe ships.o
