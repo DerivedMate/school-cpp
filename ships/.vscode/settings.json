@@ -1,12 +1,10 @@
 {
-  "files.exclude": {
-    "**/*.o": true
-  },
   "files.associations": {
     "array": "cpp",
     "atomic": "cpp",
     "*.tcc": "cpp",
     "cctype": "cpp",
+    "chrono": "cpp",
     "clocale": "cpp",
     "cmath": "cpp",
     "cstdarg": "cpp",
@@ -14,7 +12,7 @@
     "cstdint": "cpp",
     "cstdio": "cpp",
     "cstdlib": "cpp",
-    "cstring": "cpp",
+    "ctime": "cpp",
     "cwchar": "cpp",
     "cwctype": "cpp",
     "deque": "cpp",
@@ -24,12 +22,12 @@
     "algorithm": "cpp",
     "functional": "cpp",
     "iterator": "cpp",
-    "map": "cpp",
     "memory": "cpp",
     "memory_resource": "cpp",
     "numeric": "cpp",
     "optional": "cpp",
     "random": "cpp",
+    "ratio": "cpp",
     "string": "cpp",
     "string_view": "cpp",
     "system_error": "cpp",
@@ -47,12 +45,9 @@
     "sstream": "cpp",
     "stdexcept": "cpp",
     "streambuf": "cpp",
-    "typeinfo": "cpp",
-    "chrono": "cpp",
-    "ctime": "cpp",
-    "ratio": "cpp",
     "thread": "cpp",
     "cinttypes": "cpp",
+    "typeinfo": "cpp",
     "bit": "cpp"
   }
 }

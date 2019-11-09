@@ -2,7 +2,6 @@
 #include <iostream>
 #include <stdlib.h>
 #include <chrono>
-#include <algorithm>
 #include <thread>
 #include <vector>
 #include "player.cpp"
@@ -16,12 +15,13 @@
 #define CLEAR "CLEAR"
 #endif
 
-const int ui_width = 56;
+int ui_width = 56;
+int max_x_len = 0;
 
-void displayWelcomeScreen(int width)
+void displayWelcomeScreen()
 {
   clearScreen();
-  displayLogo();
+  displayLogo(ui_width);
 
   std::string menu[] = {
       "Welcome in the game!",
@@ -39,7 +39,7 @@ void displayWelcomeScreen(int width)
       "PRESS ANY KEY TO START"};
 
   for (std::string &line : menu)
-    std::cout << center(line, width) << std::endl;
+    std::cout << center(line, ui_width) << std::endl;
 
   std::cout << std::flush;
   std::cin.get();
@@ -61,10 +61,12 @@ void wait(int ms)
 
 void wait_std()
 {
-  wait(900);
+  std::string l0 = "PRESS ENTER TO CONTINUE";
+  std::cout << std::endl
+            << center(l0, ui_width) << std::endl;
 }
 
-void countDown(int width)
+void countDown()
 {
   const int DIGIT_HEIGHT = 6;
   std::string digits[3][DIGIT_HEIGHT] = {
@@ -94,19 +96,19 @@ void countDown(int width)
 
   for (auto dig : digits)
   {
-    displayLogo();
+    displayLogo(ui_width);
     for (int i = 0; i < DIGIT_HEIGHT; i++)
-      std::cout << center(dig[i], width) << std::endl;
+      std::cout << center(dig[i], ui_width) << std::endl;
 
     wait_std();
     clearScreen();
   }
 }
 
-GameMode getGameMode(int width)
+GameMode getGameMode()
 {
   clearScreen();
-  displayLogo();
+  displayLogo(ui_width);
   char buff;
 
   // -------- Print the gamemode menu -------- //
@@ -117,7 +119,7 @@ GameMode getGameMode(int width)
   };
 
   for (std::string &l : lines)
-    std::cout << center(l, width) << std::endl;
+    std::cout << center(l, ui_width) << std::endl;
   std::cout << std::flush;
 
   while (!(buff == '1' || buff == '2'))
@@ -126,10 +128,10 @@ GameMode getGameMode(int width)
   return gamemode_of_int(buff - '0' - 1);
 }
 
-void displayConfig(std::vector<int> &types, int *dim, int width)
+void displayConfig(std::vector<int> &types, int *dim)
 {
   clearScreen();
-  displayLogo();
+  displayLogo(ui_width);
 
   int n;
 
@@ -137,31 +139,34 @@ void displayConfig(std::vector<int> &types, int *dim, int width)
       "Enter the dimensions of the board",
       "(i.e.: 10 10):"};
 
-  std::string l1[] = {
-      "Give me the number of ships",
-      "followed by their sizes (i.e. 3 2 2 1):"};
+  std::string l1 = "How many types of ships do you want?";
 
   // -------- Configure the dimensions -------- //
   for (std::string &l : l0)
-    std::cout << center(l, width) << std::endl;
+    std::cout << center(l, ui_width) << std::endl;
 
   std::cin >> dim[0] >> dim[1];
+  max_x_len = len_of_int(dim[1]);
 
-  clearScreen();
-  displayLogo();
+  ui_width = dim[0] * 6;
 
   // -------- Configure the ships -------- //
   bool allLegal = true;
-  for (std::string &l : l1)
-    std::cout << center(l, width) << std::endl;
+  // for (std::string &l : l1)
+  //   std::cout << center(l, ui_width) << std::endl;
 
   do
   {
+    clearScreen();
+    displayLogo(ui_width);
+
+    std::cout << center(l1, ui_width) << std::endl;
     std::cin >> n;
 
     for (int i = 0; i < n; i++)
     {
       int buff;
+      std::cout << "What's the size of the [" << i + 1 << "/" << n << "] ship?\n:>";
       std::cin >> buff;
 
       if (buff > dim[0] || buff > dim[1])
@@ -171,6 +176,12 @@ void displayConfig(std::vector<int> &types, int *dim, int width)
         types = {};
         allLegal = false;
         break;
+      }
+      else if (mult_vec(types) > dim[0] * dim[1])
+      {
+        std::cout << "Ya ain't gonna fit that in!\nLet's start from the beginning!" << std::endl;
+        types = {};
+        allLegal = false;
       }
       else
         allLegal = true;
@@ -201,7 +212,6 @@ std::string string_of_int(int x)
 
 void displayTopCoords(int *dim)
 {
-  std::cout << std::flush;
   std::string l = "  |";
   for (int x = 0; x < dim[0]; x++)
   {
@@ -224,7 +234,12 @@ void displayBoard(Player *main, Player *other, int *dim)
   for (int y = 0; y < dim[1]; y++)
   {
     std::string line = "";
-    line += string_of_int(y);
+    std::string letter = syx_of_int(y);
+    if (letter.size() < 2)
+      line += ' ';
+    else
+      letter[0] -= 1;
+    line += letter;
     line += "|";
 
     for (int x = 0; x < dim[0]; x++)
@@ -274,7 +289,7 @@ void displayBoard(Player *main, Player *other, int *dim)
 void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other)
 {
   clearScreen();
-  displayLogo();
+  displayLogo(ui_width);
 
   std::string l00 = "What's your name?";
   std::cout << center(l00, ui_width) << "\n> ";
@@ -286,7 +301,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
       "Imma need it's x 'n y coords and the direction.",
       "(i.e.: [4]> 3 2 South)",
       "",
-      "PRESS ANY KEY TO CONTINUE"};
+      "PRESS ENTER TO CONTINUE"};
 
   std::string l1 = "Choose your placement " + player->name + "\n";
   std::string l2 = "Are you satisfied with your placement? [y/n] ";
@@ -295,7 +310,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
   center(l2, ui_width);
 
   clearScreen();
-  displayLogo();
+  displayLogo(ui_width);
 
   for (std::string &l : l0)
     std::cout << center(l, ui_width) << std::endl;
@@ -308,26 +323,32 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
 
   while (!satisfied)
   {
-    int x, y;
     std::string dir;
     player->ships = {};
 
     for (int &sz : types)
     {
+    RCSTART:
       clearScreen();
-      displayLogo();
+      displayLogo(ui_width);
       std::cout << l1;
       displayBoard(player, other, dim);
       bool added = false;
 
       while (!added)
       {
-        std::cout << "[" << sz << "]> ";
-        std::cin >> x >> y >> dir;
+        Point coord = read_coords(max_x_len, ui_width, sz);
+        if (coord.x == -99 && coord.y == -99)
+        {
+          displayCoordsHelp(ui_width);
+          goto RCSTART;
+        }
+
+        std::cin >> dir;
         Direction d = direction_of_string(dir);
 
-        Ship ship = Ship(x, y, d, sz);
-        added = player->addShip(ship);
+        Ship ship = Ship(coord.x, coord.y, d, sz);
+        added = player->addShip(ship, dim);
         if (!added)
         {
           std::cout << "Failed to add due to a collision / getting out of the boundries.\nTry a new position (pun not intended)!" << std::endl;
@@ -336,7 +357,7 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
     }
 
     clearScreen();
-    displayLogo();
+    displayLogo(ui_width);
     displayBoard(player, other, dim);
 
     std::cout << l2;
@@ -360,7 +381,7 @@ void initPC(Player *pc, std::vector<int> &types, int *dim)
       Direction dir = direction_of_int(rand(0, 3));
 
       Ship s = Ship(x, y, dir, types[i]);
-      placed = pc->addShip(s);
+      placed = pc->addShip(s, dim);
     }
   }
 }
@@ -391,7 +412,7 @@ void gameon(Player *main, Player *other, int *dim)
       center(l, ui_width);
 
     clearScreen();
-    displayLogo();
+    displayLogo(ui_width);
     std::string l0[] = {
         "It's your round " + main->name + "!",
         "Score: " + main->hits.size() + '0',
@@ -409,7 +430,7 @@ void gameon(Player *main, Player *other, int *dim)
     bool didHit = main->attack(other, x, y);
 
     clearScreen();
-    displayLogo();
+    displayLogo(ui_width);
 
     if (didHit)
       for (std::string &l : lHit)
@@ -418,21 +439,25 @@ void gameon(Player *main, Player *other, int *dim)
       for (std::string &l : lMiss)
         std::cout << l << std::endl;
 
+    std::cout << "Current Score" << std::endl
+              << main->name << ": " << main->score(other) << " / " << other->score(main) << " :" << other->name << std::endl;
+
     wait_std();
   }
 }
 
 int main()
 {
+
   std::vector<int> shipsTypes;
   int dim[2] = {0, 0};
   GameMode mode;
   clearScreen();
-  countDown(ui_width);
+  countDown();
 
-  displayWelcomeScreen(ui_width);
-  mode = getGameMode(ui_width);
-  displayConfig(shipsTypes, dim, ui_width);
+  displayWelcomeScreen();
+  mode = getGameMode();
+  displayConfig(shipsTypes, dim);
 
   Player *a = new Player(), *b = new Player();
 
@@ -446,15 +471,19 @@ int main()
   {
     gameon(a, b, dim);
     std::swap(a, b);
+
+    pause(ui_width);
   }
 
   if (a->isDead())
-  {
     std::swap(a, b);
-  }
 
   std::string l = a->name + " WON!";
   std::cout << center(l, ui_width) << std::endl;
+
+  std::string buff;
+  while (std::cin >> buff && true)
+    std::cout << int_of_string(buff) << std::endl;
 
   return 0;
 }
