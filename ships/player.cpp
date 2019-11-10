@@ -5,7 +5,7 @@
 #include "ship.cpp"
 
 struct Player
-{
+{ 
   // -------- Player's tries -------- //
   std::vector<Point> hits = {};
   std::vector<Ship> ships = {};

@@ -1,8 +1,6 @@
 #include <time.h>
 #include <iostream>
 #include <stdlib.h>
-#include <chrono>
-#include <thread>
 #include <vector>
 #include "player.cpp"
 #include "gamemode.cpp"
@@ -45,27 +43,6 @@ void displayWelcomeScreen()
   std::cin.get();
 }
 
-#ifdef _WIN32
-#include <windows.h>
-
-void wait(int milliseconds)
-{
-  Sleep(milliseconds);
-}
-#else
-void wait(int ms)
-{
-  std::this_thread::sleep_for(std::chrono::microseconds(ms * 1000));
-}
-#endif
-
-void wait_std()
-{
-  std::string l0 = "PRESS ENTER TO CONTINUE";
-  std::cout << std::endl
-            << center(l0, ui_width) << std::endl;
-}
-
 void countDown()
 {
   const int DIGIT_HEIGHT = 6;
@@ -100,7 +77,7 @@ void countDown()
     for (int i = 0; i < DIGIT_HEIGHT; i++)
       std::cout << center(dig[i], ui_width) << std::endl;
 
-    wait_std();
+    wait_std(ui_width);
     clearScreen();
   }
 }
@@ -140,12 +117,25 @@ void displayConfig(std::vector<int> &types, int *dim)
       "(i.e.: 10 10):"};
 
   std::string l1 = "How many types of ships do you want?";
+  center(l1, ui_width);
 
   // -------- Configure the dimensions -------- //
   for (std::string &l : l0)
     std::cout << center(l, ui_width) << std::endl;
 
-  std::cin >> dim[0] >> dim[1];
+  for (int i = 0; i < 2; i++)
+  {
+    bool keep_asking = false;
+    do
+    {
+      if (keep_asking)
+        std::cout << "Sorry, it's not a number; try an other one!" << std::endl;
+      auto [is_fine, num] = read_int();
+      dim[i] = num;
+
+      keep_asking = !is_fine;
+    } while (keep_asking);
+  }
   max_x_len = len_of_int(dim[1]);
 
   ui_width = dim[0] * 6;
@@ -157,29 +147,41 @@ void displayConfig(std::vector<int> &types, int *dim)
 
   do
   {
+    allLegal = true;
     clearScreen();
     displayLogo(ui_width);
 
-    std::cout << center(l1, ui_width) << std::endl;
-    std::cin >> n;
+    std::cout << l1 << std::endl;
+    auto [fine_n, n_] = read_int();
+
+    if (!fine_n || n_ <= 0)
+    {
+      allLegal = false;
+      continue;
+    };
+
+    n = n_;
 
     for (int i = 0; i < n; i++)
     {
+    RES_BUFF_CONF:
       int buff;
-      std::cout << "What's the size of the [" << i + 1 << "/" << n << "] ship?\n:>";
-      std::cin >> buff;
+      if (!allLegal)
+        std::cout << "This ain't right, try a new config!" << std::endl;
 
-      if (buff > dim[0] || buff > dim[1])
-      {
-        std::cout << buff << " is a bit too big. Try a new config!" << std::endl;
+      std::cout << "What's the size of the [" << i + 1 << "/" << n << "] ship?\n:> ";
+      auto [fine_buff, buff_] = read_int();
+      buff = buff_;
 
-        types = {};
-        allLegal = false;
-        break;
+      if (!fine_buff || buff > std::max({dim[0], dim[1]}) || buff <= 0) {
+        std::cout << "That ain't right chief!" << std::endl;
+        goto RES_BUFF_CONF;
       }
+
       else if (mult_vec(types) > dim[0] * dim[1])
       {
         std::cout << "Ya ain't gonna fit that in!\nLet's start from the beginning!" << std::endl;
+        pause(ui_width);
         types = {};
         allLegal = false;
       }
@@ -189,25 +191,6 @@ void displayConfig(std::vector<int> &types, int *dim)
       types.push_back(buff);
     }
   } while (!allLegal);
-}
-
-std::string string_of_int(int x)
-{
-  std::string l;
-  if (x <= 9)
-  {
-    l += ' ';
-    l += char(x + '0');
-  }
-  else
-  {
-    int a = x % 10;
-    int b = (x % 100 - a) / 10;
-    l += b + '0';
-    l += a + '0';
-  }
-
-  return l;
 }
 
 void displayTopCoords(int *dim)
@@ -223,7 +206,7 @@ void displayTopCoords(int *dim)
 
 void displayBoard(Player *main, Player *other, int *dim)
 {
-  std::string lHit = "XX|";
+  std::string lHit = Colors::Red + "XX" + Colors::Reset + "|";
   std::string lAttacked = "**|";
   std::string lFail = "OO|";
   std::string lShip = "##|";
@@ -298,8 +281,10 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
   std::string l0[] = {
       "Player " + player->name + ",",
       "It's high time you place your ships!",
-      "Imma need it's x 'n y coords and the direction.",
-      "(i.e.: [4]> 3 2 South)",
+      "Imma need it's y and x coords and the direction.",
+      "(i.e.: [4]> A5 South)",
+      "",
+      "You can always type " + Colors::Cyan + "?help" + Colors::Reset + " lest you get lost",
       "",
       "PRESS ENTER TO CONTINUE"};
 
@@ -411,6 +396,7 @@ void gameon(Player *main, Player *other, int *dim)
     for (std::string &l : lMiss)
       center(l, ui_width);
 
+  RESET_GAMEON:
     clearScreen();
     displayLogo(ui_width);
     std::string l0[] = {
@@ -422,12 +408,16 @@ void gameon(Player *main, Player *other, int *dim)
     for (std::string &l : l0)
       std::cout << center(l, ui_width) << std::endl;
 
-    int x, y;
     displayBoard(main, other, dim);
-    std::cout << "\n\n> ";
-    std::cin >> x >> y;
 
-    bool didHit = main->attack(other, x, y);
+    Point p = read_coords(max_x_len, ui_width);
+    if (p.x == -99 && p.y == -99)
+    {
+      displayCoordsHelp(ui_width);
+      goto RESET_GAMEON;
+    }
+
+    bool didHit = main->attack(other, p.x, p.y);
 
     clearScreen();
     displayLogo(ui_width);
@@ -441,8 +431,6 @@ void gameon(Player *main, Player *other, int *dim)
 
     std::cout << "Current Score" << std::endl
               << main->name << ": " << main->score(other) << " / " << other->score(main) << " :" << other->name << std::endl;
-
-    wait_std();
   }
 }
 
@@ -467,12 +455,16 @@ int main()
   else
     initPC(b, shipsTypes, dim);
 
+  if (!a->isAI && !b->isAI)
+    pause(ui_width, true);
+
   while (!(a->isDead() || b->isDead()))
   {
     gameon(a, b, dim);
     std::swap(a, b);
 
-    pause(ui_width);
+    wait(900);
+    pause(ui_width, true);
   }
 
   if (a->isDead())

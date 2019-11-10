@@ -1,6 +1,9 @@
 #include <iostream>
 #include <random>
 #include <algorithm>
+#include <tuple>
+#include <chrono>
+#include <thread>
 #include "colors.cpp"
 #include "point.cpp"
 
@@ -63,6 +66,34 @@ std::string center(std::string &text, int width)
   return text;
 }
 
+#ifdef _WIN32
+#include <windows.h>
+
+void wait(int milliseconds)
+{
+  Sleep(milliseconds);
+}
+#else
+void wait(int ms)
+{
+  std::this_thread::sleep_for(std::chrono::microseconds(ms * 1000));
+}
+#endif
+
+void wait_std(int ui_width, bool with_confirm = false)
+{
+  std::string l0 = "PRESS ENTER TO CONTINUE";
+
+  wait(900);
+
+  if (with_confirm)
+  {
+    std::cout << std::endl
+              << center(l0, ui_width) << std::endl;
+    std::cin.get();
+  }
+}
+
 int len_of_int(int n)
 {
   if (n == 0)
@@ -76,6 +107,25 @@ int len_of_int(int n)
   }
 
   return i;
+}
+
+std::string string_of_int(int x)
+{
+  std::string l;
+  if (x <= 9)
+  {
+    l += ' ';
+    l += char(x + '0');
+  }
+  else
+  {
+    int a = x % 10;
+    int b = (x % 100 - a) / 10;
+    l += b + '0';
+    l += a + '0';
+  }
+
+  return l;
 }
 
 int mult_vec(std::vector<int> &v)
@@ -141,6 +191,18 @@ bool is_num(char &s)
   return n >= 0 && n <= 9;
 }
 
+std::tuple<bool, int> read_int()
+{
+  std::string buff;
+  std::cin >> buff;
+
+  for (char &c : buff)
+    if (!is_num(c))
+      return std::tuple<bool, int>(false, -1);
+
+  return std::tuple<bool, int>(true, int_of_string(buff));
+}
+
 void displayCoordsHelp(int ui_width)
 {
   clearScreen();
@@ -168,11 +230,16 @@ void displayCoordsHelp(int ui_width)
   std::cin.get();
 }
 
-Point read_coords(int max_x_length, int ui_width, int shipSize)
+Point read_coords(int max_x_length, int ui_width, int shipSize = 0)
 {
   std::string buff;
   std::string y_buff, x_buff;
-  std::cout << "[" << shipSize << "]> ";
+  if (shipSize != 0)
+    std::cout << "[" << shipSize << "]> ";
+  else
+  {
+    std::cout << "> ";
+  }
   std::cin >> buff;
 
   if (buff == "?help")
@@ -212,6 +279,7 @@ void pause(int ui_width, bool with_art = false)
   else
     std::cout << center(l0[5], ui_width) << std::endl;
 
+  std::cin.get();
   std::cin.get();
 }
 
