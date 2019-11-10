@@ -130,7 +130,9 @@ void displayConfig(std::vector<int> &types, int *dim)
     {
       if (keep_asking)
         std::cout << "Sorry, it's not a number; try an other one!" << std::endl;
-      auto [is_fine, num] = read_int();
+      bool is_fine;
+      int num;
+      std::tie(is_fine, num) = read_int();
       dim[i] = num;
 
       keep_asking = !is_fine;
@@ -152,7 +154,9 @@ void displayConfig(std::vector<int> &types, int *dim)
     displayLogo(ui_width);
 
     std::cout << l1 << std::endl;
-    auto [fine_n, n_] = read_int();
+    bool fine_n;
+    int n_;
+    std::tie(fine_n, n_) = read_int();
 
     if (!fine_n || n_ <= 0)
     {
@@ -170,10 +174,11 @@ void displayConfig(std::vector<int> &types, int *dim)
         std::cout << "This ain't right, try a new config!" << std::endl;
 
       std::cout << "What's the size of the [" << i + 1 << "/" << n << "] ship?\n:> ";
-      auto [fine_buff, buff_] = read_int();
-      buff = buff_;
+      bool fine_buff;
+      std::tie(fine_buff, buff) = read_int();
 
-      if (!fine_buff || buff > std::max({dim[0], dim[1]}) || buff <= 0) {
+      if (!fine_buff || buff > std::max({dim[0], dim[1]}) || buff <= 0)
+      {
         std::cout << "That ain't right chief!" << std::endl;
         goto RES_BUFF_CONF;
       }
