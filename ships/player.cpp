@@ -5,7 +5,7 @@
 #include "ship.cpp"
 
 struct Player
-{ 
+{
   // -------- Player's tries -------- //
   std::vector<Point> hits = {};
   std::vector<Ship> ships = {};
@@ -32,10 +32,11 @@ struct Player
     return this->ships.size() == 0;
   }
 
-  int score(Player* other) {
+  int score(Player *other)
+  {
     int total_hits_dealt = 0;
 
-    for(Ship& s : other->ships) 
+    for (Ship &s : other->ships)
       total_hits_dealt += s.hits.size();
 
     return other->max_lives - total_hits_dealt;
@@ -53,7 +54,7 @@ struct Player
     }
   }
 
-  bool addShip(Ship &s, int* dim)
+  bool addShip(Ship &s, int *dim)
   {
     // -------- Check boundries -------- //
     int min_c = std::min({s.bow.x, s.bow.y, s.stern.x, s.stern.y});
@@ -69,7 +70,8 @@ struct Player
       collision = Ship::intersect(s, *p);
     }
 
-    if (!collision) {
+    if (!collision)
+    {
       this->ships.push_back(s);
       this->max_lives += s.lifes();
     }
@@ -84,9 +86,10 @@ struct Player
       return s.wouldHit(x, y);
     });
 
+    attacker->hits.push_back(p);
+
     if (boat != this->ships.end())
     {
-      attacker->hits.push_back(p);
       boat->hits.push_back(p);
       if (boat->lifes() == 0)
         this->removeShip(&p);

@@ -9,10 +9,15 @@
 
 int rand(int a, int b)
 {
+#ifdef __WIN32
+  return rand() % (b - a) + a;
+#endif
+#ifdef linux
   std::random_device rd;
   std::mt19937 eng(rd());
   std::uniform_int_distribution<> distr(a, b);
   return distr(eng);
+#endif
 }
 
 void clearScreen()
@@ -279,7 +284,6 @@ void pause(int ui_width, bool with_art = false)
   else
     std::cout << center(l0[5], ui_width) << std::endl;
 
-  std::cin.get();
   std::cin.get();
 }
 

@@ -135,12 +135,12 @@ void displayConfig(std::vector<int> &types, int *dim)
       std::tie(is_fine, num) = read_int();
       dim[i] = num;
 
-      keep_asking = !is_fine;
+      keep_asking = !is_fine && (num > 0 && num <= 100);
     } while (keep_asking);
   }
   max_x_len = len_of_int(dim[1]);
 
-  ui_width = dim[0] * 6;
+  ui_width = 65;
 
   // -------- Configure the ships -------- //
   bool allLegal = true;
@@ -173,22 +173,29 @@ void displayConfig(std::vector<int> &types, int *dim)
       if (!allLegal)
         std::cout << "This ain't right, try a new config!" << std::endl;
 
-      std::cout << "What's the size of the [" << i + 1 << "/" << n << "] ship?\n:> ";
+      std::cout << "What's the size of the [" << i + 1 << "/" << n << "] ship? (type '-1' to reset)\n:> ";
       bool fine_buff;
       std::tie(fine_buff, buff) = read_int();
 
+      if (buff == -1)
+      {
+        i = 0;
+        goto RES_BUFF_CONF;
+        types = {};
+        clearScreen();
+        displayLogo(ui_width);
+      }
+
       if (!fine_buff || buff > std::max({dim[0], dim[1]}) || buff <= 0)
       {
-        std::cout << "That ain't right chief!" << std::endl;
+        allLegal = false;
         goto RES_BUFF_CONF;
       }
 
       else if (mult_vec(types) > dim[0] * dim[1])
       {
-        std::cout << "Ya ain't gonna fit that in!\nLet's start from the beginning!" << std::endl;
-        pause(ui_width);
-        types = {};
         allLegal = false;
+        goto RES_BUFF_CONF;
       }
       else
         allLegal = true;
@@ -196,6 +203,8 @@ void displayConfig(std::vector<int> &types, int *dim)
       types.push_back(buff);
     }
   } while (!allLegal);
+
+  pause(ui_width, true);
 }
 
 void displayTopCoords(int *dim)
@@ -211,7 +220,7 @@ void displayTopCoords(int *dim)
 
 void displayBoard(Player *main, Player *other, int *dim)
 {
-  std::string lHit = Colors::Red + "XX" + Colors::Reset + "|";
+  std::string lHit = "XX|";
   std::string lAttacked = "**|";
   std::string lFail = "OO|";
   std::string lShip = "##|";
@@ -360,6 +369,8 @@ void initPlayer(Player *player, std::vector<int> &types, int *dim, Player *other
 void initPC(Player *pc, std::vector<int> &types, int *dim)
 {
   pc->isAI = true;
+  std::vector<std::string> names = {"Terminator", "El Exterminador", "SkyNet", "Blender", "My Debt"};
+  pc->name = names[rand(0, names.size() - 1)];
   for (int i = 0; i < types.size(); i++)
   {
     bool placed = false;
@@ -378,37 +389,47 @@ void initPC(Player *pc, std::vector<int> &types, int *dim)
 
 void gameon(Player *main, Player *other, int *dim)
 {
+  std::string lHit[] = {
+      " _   _ ___ _____ _ ",
+      "| | | |_ _|_   _| |",
+      "| |_| || |  | | | |",
+      "|  _  || |  | | |_|",
+      "|_| |_|___| |_| (_)"};
+
+  std::string lMiss[] = {
+      " __  __ ___ ____ ____  _ ",
+      "|  \\\/  |_ _/ ___/ ___|| |",
+      "| |\\\/| || |\\___ \\___ \\| |",
+      "| |  | || | ___) ___) |_|",
+      "|_|  |_|___|____|____/(_)"};
+
+  std::string lai = main->name + " is attacking!";
+
+  for (std::string &l : lHit)
+    center(l, ui_width);
+  for (std::string &l : lMiss)
+    center(l, ui_width);
+
+  bool didHit;
+
   if (main->isAI)
-    main->attack_rand(other, dim[0], dim[1]);
+  {
+    clearScreen();
+    displayLogo(ui_width);
+    std::cout << center(lai, ui_width) << std::endl;
+    didHit = main->attack_rand(other, dim[0], dim[1]);
+  }
   else
   {
-    std::string lHit[] = {
-        " _   _ ___ _____ _ ",
-        "| | | |_ _|_   _| |",
-        "| |_| || |  | | | |",
-        "|  _  || |  | | |_|",
-        "|_| |_|___| |_| (_)"};
-
-    std::string lMiss[] = {
-        " __  __ ___ ____ ____  _ ",
-        "|  \\\/  |_ _/ ___/ ___|| |",
-        "| |\\\/| || |\\___ \\___ \\| |",
-        "| |  | || | ___) ___) |_|",
-        "|_|  |_|___|____|____/(_)"};
-
-    for (std::string &l : lHit)
-      center(l, ui_width);
-    for (std::string &l : lMiss)
-      center(l, ui_width);
 
   RESET_GAMEON:
     clearScreen();
     displayLogo(ui_width);
     std::string l0[] = {
         "It's your round " + main->name + "!",
-        "Score: " + main->hits.size() + '0',
+        "Score: " + (main->hits.size() + '0'),
         "Enter your guess below.",
-        "(i.e.: 3 2)"};
+        "(i.e.: A2)"};
 
     for (std::string &l : l0)
       std::cout << center(l, ui_width) << std::endl;
@@ -422,20 +443,26 @@ void gameon(Player *main, Player *other, int *dim)
       goto RESET_GAMEON;
     }
 
-    bool didHit = main->attack(other, p.x, p.y);
+    didHit = main->attack(other, p.x, p.y);
+  }
 
-    clearScreen();
-    displayLogo(ui_width);
+  clearScreen();
+  displayLogo(ui_width);
 
-    if (didHit)
-      for (std::string &l : lHit)
-        std::cout << l << std::endl;
-    else
-      for (std::string &l : lMiss)
-        std::cout << l << std::endl;
+  if (didHit)
+    for (std::string &l : lHit)
+      std::cout << l << std::endl;
+  else
+    for (std::string &l : lMiss)
+      std::cout << l << std::endl;
 
-    std::cout << "Current Score" << std::endl
-              << main->name << ": " << main->score(other) << " / " << other->score(main) << " :" << other->name << std::endl;
+  std::string l1[] = {
+      "Current Score",
+      main->name + ": " + string_of_int(main->score(other)) + " / " + string_of_int(other->score(main)) + " :" + other->name};
+
+  for (std::string &l : l1)
+  {
+    std::cout << center(l, ui_width) << std::endl;
   }
 }
 
@@ -477,10 +504,6 @@ int main()
 
   std::string l = a->name + " WON!";
   std::cout << center(l, ui_width) << std::endl;
-
-  std::string buff;
-  while (std::cin >> buff && true)
-    std::cout << int_of_string(buff) << std::endl;
 
   return 0;
 }
